@@ -6,7 +6,29 @@ declare namespace Projeto {
         login: string;
         senha: string;
         email: string;
-        [key: string]: string | number;
+    
     };
-    let _usuario: Usuario = { ...usuario };
+   
+    type Recurso = {
+        id: number,
+        nome: string,
+        chave: string;  
+    };
+
+    type Perfil = {
+        id: number,
+        descricao: string;
+
+    };
+    type PerfilUsuario = {
+        descricao: any;
+        id: number,
+        perfil: Perfil,
+        usuario: Usuario;
+    };
+    type PermissaoPerfilRecurso = {
+        id: number;
+        perfil: Perfil;
+        recurso: Recurso;
+    }
 }

@@ -5,23 +5,16 @@ import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Dialog } from 'primereact/dialog';
 import { FileUpload } from 'primereact/fileupload';
-import { InputNumber, InputNumberValueChangeEvent } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { RadioButton, RadioButtonChangeEvent } from 'primereact/radiobutton';
-import { Rating } from 'primereact/rating';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
-import React, { useEffect, useRef, useState } from 'react';
-import { ProductService } from '../../../../demo/service/ProductService';
-import { Demo } from '@/types';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UsuarioService } from '@/service/UsuarioService';
-import { error } from 'console';
 import { Projeto } from '@/types';
 
 /* @todo Used 'as any' for types here. Will fix in next version due to onSelectionChange event type issue. */
-const Crud = () => {
+const Usuario = () => {
     let usuarioVazio: Projeto.Usuario = {
         id: 0,
         nome: '',
@@ -35,12 +28,12 @@ const Crud = () => {
     const [deleteUsuarioDialog, setDeleteUsuarioDialog] = useState(false);
     const [deleteUsuariosDialog, setDeleteUsuariosDialog] = useState(false);
     const [usuario, setUsuario] = useState<Projeto.Usuario>(usuarioVazio);
-    const [selectedUsuarios, setSelectedUsuarios] = useState(null);
+    const [selectedUsuarios, setSelectedUsuarios] = useState<Projeto.Usuario[]>([]);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState('');
     const toast = useRef<Toast>(null);
     const dt = useRef<DataTable<any>>(null);
-    const usuarioService = new UsuarioService()
+    const usuarioService =useMemo(() => new UsuarioService(),[])
 
     useEffect(() => {
 
@@ -54,7 +47,7 @@ const Crud = () => {
                     console.error(error);
                 });
         }
-    }, [usuarios]);
+    }, [usuarioService, usuarios]);
 
 
 
@@ -86,7 +79,7 @@ const Crud = () => {
                     setUsuarioDialog(false);
                     setUsuario(usuarioVazio);
                     setUsuarios([]);
-                    toast.current.show({
+                    toast.current?.show({
                         severity: 'info',
                         summary: 'Sucesso',
                         detail: 'Usuário cadastrado com Sucesso',
@@ -95,7 +88,7 @@ const Crud = () => {
                 })
                 .catch((error) => {
                     console.log(error.data.message);
-                    toast.current.show({
+                    toast.current?.show({
                         severity: 'error',
                         summary: 'Erro',
                         detail: 'Há algo errado com o cadastro, verifique' + error.data.message
@@ -109,14 +102,14 @@ const Crud = () => {
                     setUsuarioDialog(false);
                     setUsuario(usuarioVazio);
                     setUsuarios([]);
-                    toast.current.show({
+                    toast.current?.show({
                         severity: 'info',
                         summary: 'Sucesso',
                         detail: 'Usuário alterado com Sucesso',
 
                     });
                 }).catch((error) => {
-                    toast.current.show({
+                    toast.current?.show({
                         severity: 'error',
                         summary: 'Erro',
                         detail: 'Há algo errado com a mudança, verifique' + error.data.message
@@ -136,47 +129,29 @@ const Crud = () => {
     };
 
     const deleteUsuario = () => {
+        if(usuario.id){
         usuarioService.excluir(usuario.id).then((response) => {
             setUsuario(usuarioVazio);
             setDeleteUsuarioDialog(false);
             setUsuarios([]);
-            toast.current.show({
+            toast.current?.show({
                 severity: 'success',
                 summary: 'Sucesso',
-                detail: 'Usuario deletado com sucesso',
+                detail: 'Usuario Deletado com sucesso',
                 life: 3000
             })
 
         }).catch((error) => {
-            toast.current.show({
+            toast.current?.show({
                 severity: 'error',
                 summary: 'Erro',
                 detail: 'Ops, algo errado ao tentar deletar o usuário, verifique' + error.data.message
             })
         })
-
+    }
     };
 
-    // const findIndexById = (id: string) => {
-    //     let index = -1;
-    //     for (let i = 0; i < (products as any)?.length; i++) {
-    //         if ((products as any)[i].id === id) {
-    //             index = i;
-    //             break;
-    //         }
-    //     }
-
-    //     return index;
-    // };
-
-    // const createId = () => {
-    //     let id = '';
-    //     let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    //     for (let i = 0; i < 5; i++) {
-    //         id += chars.charAt(Math.floor(Math.random() * chars.length));
-    //     }
-    //     return id;
-    // };
+  
 
     const exportCSV = () => {
         dt.current?.exportCSV();
@@ -187,23 +162,35 @@ const Crud = () => {
     };
 
     const deleteSelectedUsuarios = () => {
-        // let _products = (products as any)?.filter((val: any) => !(selectedProducts as any)?.includes(val));
-        // setProducts(_products);
-        // setDeleteProductsDialog(false);
-        // setSelectedProducts(null);
-        // toast.current?.show({
-        //     severity: 'success',
-        //     summary: 'Successful',
-        //     detail: 'Products Deleted',
-        //     life: 3000
-        // });
-    };
 
-    // const onCategoryChange = (e: RadioButtonChangeEvent) => {
-    //     let _product = { ...product };
-    //     _product['category'] = e.value;
-    //     setProduct(_product);
-    // };
+        
+        Promise.all (selectedUsuarios.map(async(_usuario) => {
+            if (_usuario.id){
+           await usuarioService.excluir(_usuario.id)
+      
+        }
+    })).then((response) =>{
+        setUsuarios([])
+        setSelectedUsuarios([]);
+        setDeleteUsuariosDialog(false)
+        toast.current?.show({
+                severity: 'success',
+                summary: 'Sucesso',
+                detail: 'Usuarios Deletados com sucesso',
+                life: 3000
+            })
+            
+        }).catch ((error) =>{ 
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Erro ao Deletar Usuários',
+                life: 3000
+            })})
+        }
+  
+
+ 
 
     const onInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, name: string) => {
         const val = (e.target && e.target.value) || '';
@@ -212,13 +199,7 @@ const Crud = () => {
         setUsuario(_usuario);
     };
 
-    // const onInputNumberChange = (e: InputNumberValueChangeEvent, name: string) => {
-    //     const val = e.value || 0;
-    //     let _product = { ...product };
-    //     _product[`${name}`] = val;
-
-    //     setProduct(_product);
-    // };
+   
 
     const leftToolbarTemplate = () => {
         return (
@@ -312,7 +293,7 @@ const Crud = () => {
             <Button label="Sim" icon="pi pi-check" text onClick={deleteUsuario} />
         </>
     );
-    const deleteProductsDialogFooter = (
+    const deleteUsuariosDialogFooter = (
         <>
             <Button label="Não" icon="pi pi-times" text onClick={hideDeleteUsuariosDialog} />
             <Button label="Sim" icon="pi pi-check" text onClick={deleteSelectedUsuarios} />
@@ -438,4 +419,4 @@ const Crud = () => {
     );
 };
 
-export default Crud;
+export default Usuario;
